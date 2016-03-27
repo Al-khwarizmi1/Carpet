@@ -1,15 +1,38 @@
 ﻿using IWshRuntimeLibrary;
+using System;
+using System.Linq;
 
 namespace Carpet
 {
     public class Shortcut
     {
-        public void Create(string fromPath, string toPath)
-        {
-            var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(toPath);
+        private readonly CarpetWatchInfo _info;
 
-            shortcut.TargetPath = fromPath;
+        public Shortcut(CarpetWatchInfo info)
+        {
+            _info = info;
+        }
+
+        public void Create(string placedIn, string linksTo)
+        {
+            if (System.IO.File.Exists(placedIn))
+            {
+                return;
+            }
+            else
+            {
+                var parts = placedIn.Split('\\');
+                var dir = String.Join("\\", parts.Take(parts.Length - 1));
+                if (System.IO.Directory.Exists(dir) == false)
+                {
+                    System.IO.Directory.CreateDirectory(dir);
+                }
+            }
+
+            var shell = new WshShell();
+            var shortcut = (IWshShortcut)shell.CreateShortcut(placedIn);
+
+            shortcut.TargetPath = linksTo;
             shortcut.Save();
         }
 
@@ -21,10 +44,10 @@ namespace Carpet
             }
         }
 
-        public void Rename(string fromPath, string toPath)
+        public void Rename(string shouldBePlacedIn, string shouldLinkTo, string wasPlacedIn)
         {
-            Delete(fromPath);
-            Create(fromPath, toPath);
+            Delete(wasPlacedIn);
+            Create(shouldBePlacedIn, shouldLinkTo);
         }
     }
 }

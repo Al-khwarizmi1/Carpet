@@ -11,5 +11,6 @@ namespace Carpet
         public IEnumerable<string> Triggers { get; set; }
         public string DestName { get; set; }
         public string DestBaseDir { get; set; }
+        public bool IncludeSubdirectories { get; set; }
     }
 }

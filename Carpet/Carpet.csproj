@@ -58,8 +58,9 @@
     </ApplicationDefinition>
     <Compile Include="CarperFileInfo.cs" />
     <Compile Include="CarpetDirectoryInfo.cs" />
+    <Compile Include="CarpetManager.cs" />
     <Compile Include="Shortcut.cs" />
-    <Compile Include="Watcher.cs" />
+    <Compile Include="FileSystemWatcherWrapper.cs" />
     <Compile Include="CarpetWatchInfo.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
