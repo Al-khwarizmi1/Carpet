@@ -6,13 +6,6 @@ namespace Carpet
 {
     public class Shortcut
     {
-        private readonly CarpetWatchInfo _info;
-
-        public Shortcut(CarpetWatchInfo info)
-        {
-            _info = info;
-        }
-
         public void Create(string placedIn, string linksTo)
         {
             if (System.IO.File.Exists(placedIn))
@@ -21,8 +14,8 @@ namespace Carpet
             }
             else
             {
-                var parts = placedIn.Split('\\');
-                var dir = String.Join("\\", parts.Take(parts.Length - 1));
+                var parts = placedIn.Split('/');
+                var dir = String.Join("/", parts.Take(parts.Length - 1));
                 if (System.IO.Directory.Exists(dir) == false)
                 {
                     System.IO.Directory.CreateDirectory(dir);
@@ -30,7 +23,7 @@ namespace Carpet
             }
 
             var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(placedIn);
+            var shortcut = (IWshShortcut)shell.CreateShortcut(placedIn + ".lnk");
 
             shortcut.TargetPath = linksTo;
             shortcut.Save();

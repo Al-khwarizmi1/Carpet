@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 namespace Carpet
@@ -8,21 +7,15 @@ namespace Carpet
     {
         private readonly IList<FileSystemWatcher> _watchers;
 
-        private readonly Func<string, bool> _fileTrigger;
-        private readonly Func<string, bool> _dirTrigger;
         private readonly CarpetWatchInfo _info;
         private readonly CarpetManager _manager;
 
         public FileSystemWatcherWrapper(
-            Func<string, bool> fileFileTrigger,
-            Func<string, bool> dirTrigger,
+            CarpetManager manager,
             CarpetWatchInfo info)
         {
-            _fileTrigger = fileFileTrigger;
-            _dirTrigger = dirTrigger;
-
+            _manager = manager;
             _info = info;
-            _manager = new CarpetManager(_info);
 
             CreateWatchers();
         }
@@ -72,7 +65,6 @@ namespace Carpet
         {
 
             if (File.Exists(path) == false ||
-                _fileTrigger(path) == false ||
                 _info.WatchFiles == false)
             {
                 return;
@@ -84,7 +76,6 @@ namespace Carpet
         private void CreateIfDirectory(string path)
         {
             if (Directory.Exists(path) == false ||
-                _dirTrigger(path) == false ||
                 _info.WatchDirs == false)
             {
                 return;
