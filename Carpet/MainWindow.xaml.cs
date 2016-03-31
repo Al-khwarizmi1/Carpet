@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
+using System.Windows.Forms;
 
 namespace Carpet
 {
@@ -11,27 +13,67 @@ namespace Carpet
     {
         private string ConfigFile = "config.json";
 
+        private IList<CarpetManager> managers;
+
+        private static string BaseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+        private NotifyIcon _sysTrayIcon;
+
         public MainWindow()
         {
             InitializeComponent();
-            Deserialize();
+
+            this.StateChanged += MainWindow_StateChanged;
+
+            managers = new List<CarpetManager>();
+
+            LoadFromFile();
+            CreateIcon();
         }
 
-
-        private void Deserialize()
+        private void MainWindow_StateChanged(object sender, System.EventArgs e)
         {
-            if (System.IO.File.Exists(ConfigFile) == false)
+            if (this.WindowState == WindowState.Minimized)
+            {
+                this.ShowInTaskbar = false;
+            }
+        }
+
+        private void LoadFromFile()
+        {
+            if (File.Exists(ConfigFile) == false)
             {
                 return;
             }
 
             var configs = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(ConfigFile), typeof(IEnumerable<CarpetWatchInfo>),
                    new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All }) as IEnumerable<CarpetWatchInfo>;
+
             foreach (var config in configs)
             {
-                new CarpetManager(config).InitialScan();
+                var mananger = new CarpetManager(config);
+                mananger.StartWatch();
+                managers.Add(mananger);
             }
         }
 
+
+        public void CreateIcon()
+        {
+            _sysTrayIcon = new NotifyIcon();
+            _sysTrayIcon.Text = @"Carpet";
+            _sysTrayIcon.Icon = new System.Drawing.Icon(Path.Combine(BaseDir, @"carpet.ico"), 40, 40);
+            _sysTrayIcon.Visible = true;
+            _sysTrayIcon.DoubleClick += _sysTrayIcon_DoubleClick;
+        }
+
+        private void _sysTrayIcon_DoubleClick(object sender, System.EventArgs e)
+        {
+            if (this.WindowState == WindowState.Minimized)
+            {
+                this.ShowInTaskbar = true;
+                this.WindowState = WindowState.Normal;
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ namespace Carpet
         {
             _manager = manager;
             _info = info;
+            _watchers = new List<FileSystemWatcher>();
 
             CreateWatchers();
         }
