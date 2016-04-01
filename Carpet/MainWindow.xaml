@@ -5,7 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Carpet"
         mc:Ignorable="d"
+        xmlns:avalonEdit="clr-namespace:ICSharpCode.AvalonEdit;assembly=ICSharpCode.AvalonEdit"
         Title="MainWindow" Height="350" Width="525">
-    <Grid>
+    <Grid Margin="10,0,0,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <avalonEdit:TextEditor Grid.Row="0" Grid.Column="0"
+            Name="AeteSourceCode" FontFamily="Consolas"
+            FontSize="10pt" SyntaxHighlighting="CSharp"
+            HorizontalAlignment="Center" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" Text="" Width="484">
+        </avalonEdit:TextEditor>
     </Grid>
 </Window>

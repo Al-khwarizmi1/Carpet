@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace Carpet
 {
@@ -27,8 +28,10 @@ namespace Carpet
 
             managers = new List<CarpetManager>();
 
-            LoadFromFile();
+            //LoadFromFile();
             CreateIcon();
+
+            InitializeAvalon();
         }
 
         private void MainWindow_StateChanged(object sender, System.EventArgs e)
@@ -74,6 +77,14 @@ namespace Carpet
                 this.ShowInTaskbar = true;
                 this.WindowState = WindowState.Normal;
             }
+        }
+
+
+        private void InitializeAvalon()
+        {
+            XmlTextReader loXmlTextReader = new XmlTextReader(File.OpenRead("CSharp-Mode.xshd"));
+            AeteSourceCode.SyntaxHighlighting = ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(loXmlTextReader, ICSharpCode.AvalonEdit.Highlighting.HighlightingManager.Instance);
+            AeteSourceCode.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(AeteSourceCode.Options);
         }
     }
 }
