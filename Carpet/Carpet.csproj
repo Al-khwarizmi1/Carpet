@@ -24,7 +24,7 @@
     <OutputPath>..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>2</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -35,6 +35,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>carpet.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CodeAnalysis">
@@ -86,6 +89,7 @@
     <Compile Include="CarpetFileInfo.cs" />
     <Compile Include="CarpetDirectoryInfo.cs" />
     <Compile Include="CarpetManager.cs" />
+    <Compile Include="CustomFunction.cs" />
     <Compile Include="Shortcut.cs" />
     <Compile Include="FileSystemWatcherWrapper.cs" />
     <Compile Include="CarpetWatchInfo.cs" />

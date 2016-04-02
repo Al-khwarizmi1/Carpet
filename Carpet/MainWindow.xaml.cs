@@ -1,8 +1,12 @@
-﻿using ICSharpCode.AvalonEdit.CodeCompletion;
+﻿using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
@@ -20,20 +24,33 @@ namespace Carpet
 
         private NotifyIcon _sysTrayIcon;
 
+        private CustomFunction _filePathFunction;
+        private CustomFunction _dirPathFunction;
+
         public MainWindow()
         {
             InitializeComponent();
 
             this.StateChanged += MainWindow_StateChanged;
+            this.Closing += MainWindow_Closing;
 
             managers = new List<CarpetManager>();
 
             //LoadFromFile();
             CreateIcon();
 
+
+            _filePathFunction = new CustomFunction("GetFilesPath", new CustomFunctionParameter(typeof(CarpetFileInfo), "file"), "\treturn null;");
+            _dirPathFunction = new CustomFunction("GetDirPath", new CustomFunctionParameter(typeof(CarpetDirectoryInfo), "dir"), "\treturn null;");
+
             InitializeAvalon();
+
         }
 
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            _sysTrayIcon.Dispose();
+        }
 
         private void MainWindow_StateChanged(object sender, System.EventArgs e)
         {
@@ -87,66 +104,35 @@ namespace Carpet
             CodeEditor.SyntaxHighlighting = ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(loXmlTextReader, ICSharpCode.AvalonEdit.Highlighting.HighlightingManager.Instance);
             CodeEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(CodeEditor.Options);
 
-            var startSection =
-@"
-// Comments about possible values
-// Return null to skip file
-string GetFilePah(CarpetFileInfo file)
-{
-";
-            var intersection = @"
-}
 
-// Comments about possible values
-// Return null to skip directory
-string GetDirectoryPah(CarpetDirectoryInfo dir)
-{
-";
-            var endingSection = @"
-}";
-
-
-            var getFilePathFunction = @"
-    return null;
-";
-            var getDirPathFunction = @"
-    return null;
+            var directoriesToWatch = @"
+// Directories to watch, one per line
 ";
 
-            CodeEditor.TextArea.Document.Text = startSection;
-            var a = new TextSegment()
+            CodeEditor.TextArea.Document.Text = directoriesToWatch;
+
+            var a3 = new TextSegment()
             {
                 StartOffset = 0,
                 Length = CodeEditor.TextArea.Document.Text.Length
             };
 
-            CodeEditor.TextArea.Document.Text += getFilePathFunction;
-
-            var a1 = new TextSegment()
-            {
-                StartOffset = CodeEditor.TextArea.Document.Text.Length,
-                Length = intersection.Length
-            };
-            CodeEditor.TextArea.Document.Text += intersection;
-            CodeEditor.TextArea.Document.Text += getDirPathFunction;
-
-            var a2 = new TextSegment()
-            {
-                StartOffset = CodeEditor.TextArea.Document.Text.Length,
-                Length = endingSection.Length
-            };
-
-            CodeEditor.TextArea.Document.Text += endingSection;
-
+            CodeEditor.TextArea.Document.Text += @"
+C:\MyFolder\
+";
 
 
             var p = new TextSegmentReadOnlySectionProviderIgnoreStartAndEnd<TextSegment>(CodeEditor.Document);
 
-            p.Segments.Add(a);
-            p.Segments.Add(a1);
-            p.Segments.Add(a2);
+            foreach (var readonlysegment in AddFunctionToEditor(_filePathFunction, CodeEditor).Union(AddFunctionToEditor(_dirPathFunction, CodeEditor)))
+            {
+                p.Segments.Add(readonlysegment);
+            }
+
+            p.Segments.Add(a3);
 
             CodeEditor.TextArea.ReadOnlySectionProvider = p;
+
 
             var segments = CodeEditor.TextArea.ReadOnlySectionProvider.GetDeletableSegments(new TextSegment
             {
@@ -159,37 +145,62 @@ string GetDirectoryPah(CarpetDirectoryInfo dir)
             CodeEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
         }
 
+        private IList<TextSegment> AddFunctionToEditor(CustomFunction function, TextEditor editor)
+        {
+            var header = new TextSegment()
+            {
+                StartOffset = CodeEditor.TextArea.Document.Text.Length,
+                Length = function.FunctionHeader.Length
+            };
+
+            CodeEditor.TextArea.Document.Text += function.FunctionHeader;
+
+            CodeEditor.TextArea.Document.Text += function.FunctionBody;
+
+            var footer = new TextSegment()
+            {
+                StartOffset = CodeEditor.TextArea.Document.Text.Length,
+                Length = function.FunctionFooter.Length
+            };
+
+            CodeEditor.TextArea.Document.Text += function.FunctionFooter;
+
+            return new List<TextSegment> { header, footer };
+        }
+
         CompletionWindow completionWindow;
+
+
+        private bool IsAutocompleteForVariable(string variable)
+        {
+            var trigger = CodeEditor.TextArea.Document.GetText(CodeEditor.TextArea.Caret.Offset - variable.Length - 1, variable.Length);
+
+            return trigger == variable;
+        }
 
         void textEditor_TextArea_TextEntered(object sender, TextCompositionEventArgs e)
         {
             if (e.Text == ".")
             {
-                //Magic 5 - 'dir.'(4chars), 'file.'(5chars), just take 5 chars and check which one triggered autocomplete
-                var trigger = CodeEditor.TextArea.Document.GetText(CodeEditor.TextArea.Caret.Offset - 5, 5);
+                IList<ICompletionData> data = new List<ICompletionData>();
 
-                if (trigger.EndsWith("file."))
+                if (IsAutocompleteForVariable(_filePathFunction.Parameter.Name))
                 {
-                    // Open code completion after the user has pressed dot:
-                    completionWindow = new CompletionWindow(CodeEditor.TextArea);
-                    IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
-                    data.Add(new AutoCompletionData("file1"));
-                    data.Add(new AutoCompletionData("file2"));
-                    data.Add(new AutoCompletionData("file3"));
-                    completionWindow.Show();
-                    completionWindow.Closed += delegate
-                    {
-                        completionWindow = null;
-                    };
+                    data = _filePathFunction.Parameter.CompletionData;
                 }
-                else if (trigger.EndsWith("dir."))
+                else if (IsAutocompleteForVariable(_dirPathFunction.Parameter.Name))
                 {
-                    // Open code completion after the user has pressed dot:
+                    data = _dirPathFunction.Parameter.CompletionData;
+                }
+
+                if (data.Any())
+                {
                     completionWindow = new CompletionWindow(CodeEditor.TextArea);
-                    IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
-                    data.Add(new AutoCompletionData("dir1"));
-                    data.Add(new AutoCompletionData("dir2"));
-                    data.Add(new AutoCompletionData("dir3"));
+
+                    foreach (var completionData in data)
+                    {
+                        completionWindow.CompletionList.CompletionData.Add(completionData);
+                    }
                     completionWindow.Show();
                     completionWindow.Closed += delegate
                     {
@@ -197,6 +208,36 @@ string GetDirectoryPah(CarpetDirectoryInfo dir)
                     };
                 }
 
+            }
+            else if (e.Text == "\\")
+            {
+                var line = CodeEditor.TextArea.Document.GetLineByNumber(CodeEditor.TextArea.Caret.Line);
+                var lineText = CodeEditor.TextArea.Document.GetText(line.Offset, line.Length);
+                if (Directory.Exists(lineText))
+                {
+                    try
+                    {
+                        var dirs = Directory.GetDirectories(lineText);
+
+                        completionWindow = new CompletionWindow(CodeEditor.TextArea);
+                        IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
+
+                        foreach (var dir in dirs)
+                        {
+                            data.Add(new AutoCompletionData(dir.Split('\\').Last()));
+                        }
+
+                        completionWindow.Show();
+                        completionWindow.Closed += delegate
+                        {
+                            completionWindow = null;
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex);
+                    }
+                }
             }
         }
 
