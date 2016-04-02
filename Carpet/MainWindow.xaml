@@ -15,7 +15,7 @@
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
         <avalonEdit:TextEditor Grid.Row="0" Grid.Column="0"
-            Name="AeteSourceCode" FontFamily="Consolas"
+            Name="CodeEditor" FontFamily="Consolas"
             FontSize="10pt" SyntaxHighlighting="CSharp"
             HorizontalAlignment="Center" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" Text="" Width="484">
         </avalonEdit:TextEditor>

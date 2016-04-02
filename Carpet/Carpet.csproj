@@ -82,12 +82,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AutoCompletionData.cs" />
     <Compile Include="CarpetFileInfo.cs" />
     <Compile Include="CarpetDirectoryInfo.cs" />
     <Compile Include="CarpetManager.cs" />
     <Compile Include="Shortcut.cs" />
     <Compile Include="FileSystemWatcherWrapper.cs" />
     <Compile Include="CarpetWatchInfo.cs" />
+    <Compile Include="TextSegmentReadOnlySectionProviderIgnoreStartAndEnd.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
