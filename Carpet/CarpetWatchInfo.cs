@@ -7,8 +7,8 @@ namespace Carpet
     {
         public CarpetWatchInfo()
         {
-            FileDestFunc = new CustomFunction<CarpetFileInfo>("GetFilePath", new CustomFunctionParameter(typeof(CarpetFileInfo), "file"), string.Empty);
-            DirDestFunc = new CustomFunction<CarpetDirectoryInfo>("GetDirPath", new CustomFunctionParameter(typeof(CarpetDirectoryInfo), "dir"), string.Empty);
+            FileDestFunc = new CustomFunction<CarpetFileInfo>("GetFilePath", PredefinedCustomFunctionParameter.File, string.Empty);
+            DirDestFunc = new CustomFunction<CarpetDirectoryInfo>("GetDirPath", PredefinedCustomFunctionParameter.Dir, string.Empty);
         }
 
         public string Name { get; set; }

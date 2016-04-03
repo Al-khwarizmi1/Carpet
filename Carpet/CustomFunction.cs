@@ -31,6 +31,12 @@ namespace Carpet
         }
     }
 
+    public static class PredefinedCustomFunctionParameter
+    {
+        public static CustomFunctionParameter File = new CustomFunctionParameter(typeof(CarpetFileInfo), "file");
+        public static CustomFunctionParameter Dir = new CustomFunctionParameter(typeof(CarpetDirectoryInfo), "dir");
+    }
+
     public class CustomFunction<T>
     {
         public CustomFunctionParameter Parameter { get; }
@@ -54,6 +60,13 @@ namespace Carpet
             return (string)FunctionDelegate.Invoke(parameter).Result;
         }
 
+        public bool Test()
+        {
+            CSharpScript.Create<string>(Function, ScriptOptions.Default.WithReferences(typeof(Carpet.CarpetWatchInfo).Assembly)
+                .WithReferences(typeof(Carpet.CarpetDirectoryInfo).Assembly), typeof(T)).CreateDelegate();
+            return true;
+        }
+
         public CustomFunction(string functioName, CustomFunctionParameter parameter, string functionBody)
         {
             FunctioName = functioName;
@@ -61,7 +74,7 @@ namespace Carpet
             Parameter = parameter;
 
             FunctionHeader = $@"
-string {FunctioName}({Parameter.Type.Name} {Parameter.Name})
+string {FunctioName}(Carpet.{Parameter.Type.Name} {Parameter.Name})
 {{
 ";
 

@@ -6,7 +6,7 @@ namespace Carpet
 {
     public class CarpetManager
     {
-        private readonly CarpetWatchInfo _info;
+        public CarpetWatchInfo Info { get; private set; }
         private FileSystemWatcherWrapper _watcher;
 
         private readonly ScriptRunner<string> _fileDest;
@@ -16,7 +16,7 @@ namespace Carpet
 
         public CarpetManager(CarpetWatchInfo info)
         {
-            _info = info;
+            Info = info;
 
             _dirDest = CSharpScript.Create<string>(info.DirDest, ScriptOptions.Default, typeof(CarpetDirectoryInfo)).CreateDelegate();
             _fileDest = CSharpScript.Create<string>(info.FileDest, ScriptOptions.Default, typeof(CarpetFileInfo)).CreateDelegate();
@@ -26,12 +26,12 @@ namespace Carpet
 
         public void InitialScan()
         {
-            if (Directory.Exists(_info.DestBaseDir))
+            if (Directory.Exists(Info.DestBaseDir))
             {
-                Directory.Delete(_info.DestBaseDir, true);
+                Directory.Delete(Info.DestBaseDir, true);
             }
 
-            foreach (var dirToWatch in _info.Dirs)
+            foreach (var dirToWatch in Info.Dirs)
             {
                 var directories = Directory.GetDirectories(dirToWatch);
 
@@ -51,7 +51,7 @@ namespace Carpet
 
         public void StartWatch()
         {
-            _watcher = new FileSystemWatcherWrapper(_info.Dirs, _info.IncludeSubdirectories, CreateFile, CreateDir);
+            _watcher = new FileSystemWatcherWrapper(Info.Dirs, Info.IncludeSubdirectories, CreateFile, CreateDir);
         }
 
         public void StopWatch()
@@ -69,7 +69,7 @@ namespace Carpet
                 return;
             }
 
-            _shortcut.Create(_info.DestBaseDir + dest, path);
+            _shortcut.Create(Info.DestBaseDir + dest, path);
         }
 
         public void CreateDir(string path)
@@ -83,7 +83,7 @@ namespace Carpet
                 return;
             }
 
-            _shortcut.Create(_info.DestBaseDir + dest, path);
+            _shortcut.Create(Info.DestBaseDir + dest, path);
         }
 
     }

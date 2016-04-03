@@ -1,16 +1,10 @@
-﻿using ICSharpCode.AvalonEdit;
-using ICSharpCode.AvalonEdit.CodeCompletion;
-using ICSharpCode.AvalonEdit.Document;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Xml;
 
 namespace Carpet
 {
@@ -21,7 +15,8 @@ namespace Carpet
 
         private IList<CarpetManager> managers;
 
-        private CarpetWatchInfo _viewModel;
+        private CarpetWatchInfo _model;
+        private CarpetWatchInfoEditViewModel _viewModel;
 
         public MainWindow()
         {
@@ -47,11 +42,9 @@ namespace Carpet
             WatchInfoCombo.SelectionChanged += WatchInfoCombo_SelectionChanged;
 
 
-            InitializeAvalon();
-
-            _viewModel = new CarpetWatchInfo
+            _model = new CarpetWatchInfo
             {
-                DestBaseDir = @"c:\Destination",
+                DestBaseDir = @"c:\",
                 IncludeSubdirectories = true,
                 Name = "My watch",
                 Dirs = new[] { @"c:\Program files", @"c:\Windows" },
@@ -59,25 +52,26 @@ namespace Carpet
                 FileDest = "\treturn null;"
             };
 
-            UpdateViewModel(_viewModel);
+            UpdateViewModel(_model);
         }
 
         private void WatchInfoCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            _viewModel = ((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo;
-            UpdateViewModel(_viewModel);
+            _model = ((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo;
+            UpdateViewModel(_model);
         }
 
         public void UpdateViewModel(CarpetWatchInfo info)
         {
-            this.DataContext = new CarpetWatchInfoEditViewModel
+            _viewModel = new CarpetWatchInfoEditViewModel
             {
                 Name = info.Name,
                 DestBaseDir = info.DestBaseDir,
                 IncludeSubdirectories = info.IncludeSubdirectories,
             };
+            this.DataContext = _viewModel;
 
-            GenerateCode(info.Dirs, info.FileDestFunc, info.DirDestFunc);
+            CodeEditor.GenerateCode(info.Dirs, info.FileDestFunc, info.DirDestFunc);
         }
 
         private void LoadFromFile()
@@ -90,169 +84,91 @@ namespace Carpet
             }
         }
 
-        private void InitializeAvalon()
-        {
-            XmlTextReader loXmlTextReader = new XmlTextReader(File.OpenRead("CSharp-Mode.xshd"));
-            CodeEditor.SyntaxHighlighting = ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(loXmlTextReader, ICSharpCode.AvalonEdit.Highlighting.HighlightingManager.Instance);
-            CodeEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(CodeEditor.Options);
-
-            //var segments = CodeEditor.TextArea.ReadOnlySectionProvider.GetDeletableSegments(new TextSegment
-            //{
-            //    StartOffset = 0,
-            //    Length = CodeEditor.TextArea.Document.TextLength
-            //});
-
-
-            CodeEditor.TextArea.TextEntering += CodeEditor_TextEntering;
-            CodeEditor.TextArea.TextEntered += CodeEditor_TextEntered;
-        }
-
-        private void GenerateCode(IEnumerable<string> dirs, CustomFunction<CarpetFileInfo> fileFunction, CustomFunction<CarpetDirectoryInfo> dirFunction)
-        {
-            CodeEditor.Clear();
-
-            var directoriesToWatch = @"
-// Directories to watch, one per line
-";
-
-            CodeEditor.TextArea.Document.Text = directoriesToWatch;
-
-            var a3 = new TextSegment()
-            {
-                StartOffset = 0,
-                Length = CodeEditor.TextArea.Document.Text.Length
-            };
-
-            CodeEditor.TextArea.Document.Text += string.Join("\n", dirs);
-
-
-            var p = new TextSegmentReadOnlySectionProviderIgnoreWrapper<TextSegment>(CodeEditor.Document);
-
-            foreach (var readonlysegment in AddFunctionToEditor(fileFunction, CodeEditor).Union(AddFunctionToEditor(dirFunction, CodeEditor)))
-            {
-                p.Segments.Add(readonlysegment);
-            }
-
-            p.Segments.Add(a3);
-
-            CodeEditor.TextArea.ReadOnlySectionProvider = p;
-        }
-
-        private IList<TextSegment> AddFunctionToEditor<T>(CustomFunction<T> function, TextEditor editor)
-        {
-            var header = new TextSegment()
-            {
-                StartOffset = CodeEditor.TextArea.Document.Text.Length,
-                Length = function.FunctionHeader.Length
-            };
-
-            CodeEditor.TextArea.Document.Text += function.FunctionHeader;
-
-            CodeEditor.TextArea.Document.Text += function.FunctionBody;
-
-            var footer = new TextSegment()
-            {
-                StartOffset = CodeEditor.TextArea.Document.Text.Length,
-                Length = function.FunctionFooter.Length
-            };
-
-            CodeEditor.TextArea.Document.Text += function.FunctionFooter;
-
-            return new List<TextSegment> { header, footer };
-        }
-
-        CompletionWindow completionWindow;
-
-
-        private bool IsAutocompleteForVariable(string variable)
-        {
-            var trigger = CodeEditor.TextArea.Document.GetText(CodeEditor.TextArea.Caret.Offset - variable.Length - 1, variable.Length);
-
-            return trigger == variable;
-        }
-
-        void CodeEditor_TextEntered(object sender, TextCompositionEventArgs e)
-        {
-            if (e.Text == ".")
-            {
-                IList<ICompletionData> data = new List<ICompletionData>();
-
-                if (IsAutocompleteForVariable(_viewModel.FileDestFunc.Parameter.Name))
-                {
-                    data = _viewModel.FileDestFunc.Parameter.CompletionData;
-                }
-                else if (IsAutocompleteForVariable(_viewModel.DirDestFunc.Parameter.Name))
-                {
-                    data = _viewModel.DirDestFunc.Parameter.CompletionData;
-                }
-
-                if (data.Any())
-                {
-                    completionWindow = new CompletionWindow(CodeEditor.TextArea);
-
-                    foreach (var completionData in data)
-                    {
-                        completionWindow.CompletionList.CompletionData.Add(completionData);
-                    }
-                    completionWindow.Show();
-                    completionWindow.Closed += delegate
-                    {
-                        completionWindow = null;
-                    };
-                }
-
-            }
-            else if (e.Text == "\\")
-            {
-                var line = CodeEditor.TextArea.Document.GetLineByNumber(CodeEditor.TextArea.Caret.Line);
-                var lineText = CodeEditor.TextArea.Document.GetText(line.Offset, line.Length);
-                if (Directory.Exists(lineText))
-                {
-                    try
-                    {
-                        var dirs = Directory.GetDirectories(lineText);
-
-                        completionWindow = new CompletionWindow(CodeEditor.TextArea);
-                        IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
-
-                        foreach (var dir in dirs)
-                        {
-                            data.Add(new AutoCompletionData(dir.Split('\\').Last()));
-                        }
-
-                        completionWindow.Show();
-                        completionWindow.Closed += delegate
-                        {
-                            completionWindow = null;
-                        };
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex);
-                    }
-                }
-            }
-        }
-
-        void CodeEditor_TextEntering(object sender, TextCompositionEventArgs e)
-        {
-            if (e.Text.Length > 0 && completionWindow != null)
-            {
-                if (!char.IsLetterOrDigit(e.Text[0]))
-                {
-                    completionWindow.CompletionList.RequestInsertion(e);
-                }
-            }
-        }
-
         private void Reset_OnClick(object sender, RoutedEventArgs e)
         {
-            UpdateViewModel(_viewModel);
+            UpdateViewModel(_model);
         }
 
         private void Save_OnClick(object sender, RoutedEventArgs e)
         {
+            var segments = CodeEditor.GetDeletableSegments().ToArray();
+            var watchDirs = segments[0].Split('\n').Select(_ => _.Trim());
 
+            var error = AreDirectoriesValid(_viewModel.DestBaseDir, watchDirs);
+            if (error != null)
+            {
+                MessageBox.Show(error, "Error", MessageBoxButton.OK);
+                return;
+            }
+
+            error = IsNameValid(_viewModel.Name);
+            if (error != null)
+            {
+                MessageBox.Show(error, "Error", MessageBoxButton.OK);
+                return;
+            }
+
+            try
+            {
+                var f = new CustomFunction<CarpetFileInfo>("GetFilePath", PredefinedCustomFunctionParameter.File, segments[1]).Test();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Compilation error: GetFilePath", MessageBoxButton.OK);
+                return;
+            }
+
+            try
+            {
+                var f = new CustomFunction<CarpetFileInfo>("GetDirPath", PredefinedCustomFunctionParameter.Dir, segments[2]).Test();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Compilation error:GetDirPath", MessageBoxButton.OK);
+                return;
+            }
+
+        }
+
+        private string IsNameValid(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return "Name required";
+            }
+
+            if (managers.FirstOrDefault(_ => _.Info.Name == name) != null)
+            {
+                return "Name must be unique";
+            }
+            return null;
+        }
+
+        private string AreDirectoriesValid(string baseDir, IEnumerable<string> watchDirs)
+        {
+            if (Directory.Exists(baseDir) == false)
+            {
+                return "Invalid base directory.";
+            }
+
+            var invalidDir = watchDirs.FirstOrDefault(_ => Directory.Exists(_) == false);
+            if (invalidDir != null)
+            {
+                return $"Invalid watch directory'{invalidDir}'.";
+            }
+
+            if (watchDirs.Count() == 0)
+            {
+                return "At least one watch directory required";
+            }
+
+            var disks = new[] { baseDir[0] }.Concat(watchDirs.Select(_ => _[0])).GroupBy(_ => _);
+            if (disks.Count() > 1)
+            {
+                return "All directories must be on same disk";
+            }
+
+            return null;
         }
     }
 }

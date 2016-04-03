@@ -57,11 +57,7 @@
             <CheckBox Grid.Column="1" Grid.Row="2" IsChecked="{Binding IncludeSubdirectories}"></CheckBox>
         </Grid>
 
-        <avalonEdit:TextEditor Grid.Row="2"
-            Name="CodeEditor" FontFamily="Consolas"
-            FontSize="10pt" SyntaxHighlighting="CSharp"
-            HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" Text="" >
-        </avalonEdit:TextEditor>
+        <local:CodeEditor Grid.Row="2" x:Name="CodeEditor"></local:CodeEditor>
 
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions >

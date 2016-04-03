@@ -90,6 +90,9 @@
     <Compile Include="CarpetDirectoryInfo.cs" />
     <Compile Include="CarpetManager.cs" />
     <Compile Include="CarpetWatchInfoEditViewModel.cs" />
+    <Compile Include="CodeEditor.xaml.cs">
+      <DependentUpon>CodeEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ConfigManager.cs" />
     <Compile Include="CustomFunction.cs" />
     <Compile Include="Shortcut.cs" />
@@ -97,6 +100,10 @@
     <Compile Include="CarpetWatchInfo.cs" />
     <Compile Include="SystemTray.cs" />
     <Compile Include="TextSegmentReadOnlySectionProviderWrapper.cs" />
+    <Page Include="CodeEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
