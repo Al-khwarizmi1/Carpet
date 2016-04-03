@@ -8,8 +8,6 @@ namespace Carpet
     {
         private readonly CarpetWatchInfo _info;
         private FileSystemWatcherWrapper _watcher;
-        private readonly ScriptRunner<bool> _fileTrigger;
-        private readonly ScriptRunner<bool> _dirTrigger;
 
         private readonly ScriptRunner<string> _fileDest;
         private readonly ScriptRunner<string> _dirDest;
@@ -20,17 +18,8 @@ namespace Carpet
         {
             _info = info;
 
-            if (info.WatchDirs)
-            {
-                _dirTrigger = CSharpScript.Create<bool>(info.DirTrigger, ScriptOptions.Default, typeof(CarpetDirectoryInfo)).CreateDelegate();
-                _dirDest = CSharpScript.Create<string>(info.DirDest, ScriptOptions.Default, typeof(CarpetDirectoryInfo)).CreateDelegate();
-            }
-
-            if (info.WatchFiles)
-            {
-                _fileDest = CSharpScript.Create<string>(info.FileDest, ScriptOptions.Default, typeof(CarpetFileInfo)).CreateDelegate();
-                _fileTrigger = CSharpScript.Create<bool>(info.FileTrigger, ScriptOptions.Default, typeof(CarpetFileInfo)).CreateDelegate();
-            }
+            _dirDest = CSharpScript.Create<string>(info.DirDest, ScriptOptions.Default, typeof(CarpetDirectoryInfo)).CreateDelegate();
+            _fileDest = CSharpScript.Create<string>(info.FileDest, ScriptOptions.Default, typeof(CarpetFileInfo)).CreateDelegate();
 
             _shortcut = new Shortcut();
         }
@@ -44,67 +33,55 @@ namespace Carpet
 
             foreach (var dirToWatch in _info.Dirs)
             {
-                if (_info.WatchDirs)
-                {
-                    var directories = Directory.GetDirectories(dirToWatch);
+                var directories = Directory.GetDirectories(dirToWatch);
 
-                    foreach (var dir in directories)
-                    {
-                        Create(dir);
-                    }
+                foreach (var dir in directories)
+                {
+                    CreateDir(dir);
                 }
 
-                if (_info.WatchFiles)
-                {
-                    var files = Directory.GetFiles(dirToWatch);
+                var files = Directory.GetFiles(dirToWatch);
 
-                    foreach (var f in files)
-                    {
-                        Create(f);
-                    }
+                foreach (var f in files)
+                {
+                    CreateFile(f);
                 }
             }
         }
 
         public void StartWatch()
         {
-            _watcher = new FileSystemWatcherWrapper(this, _info);
+            _watcher = new FileSystemWatcherWrapper(_info.Dirs, _info.IncludeSubdirectories, CreateFile, CreateDir);
         }
 
-        public void Create(string path)
+        public void StopWatch()
         {
-            if (File.Exists(path) && _info.WatchFiles)
-            {
-                CreateFile(path);
-            }
-            else if (_info.WatchDirs)
-            {
-                CreateDir(path);
-            }
+            _watcher.Stop();
         }
 
-        private void CreateFile(string path)
+        public void CreateFile(string path)
         {
             var fileInfo = new CarpetFileInfo(path);
-            if (_fileTrigger(fileInfo).Result == false)
+
+            var dest = _fileDest(fileInfo).Result;
+            if (dest == null)
             {
                 return;
             }
-
-            var dest = _fileDest(fileInfo).Result;
 
             _shortcut.Create(_info.DestBaseDir + dest, path);
         }
 
-        private void CreateDir(string path)
+        public void CreateDir(string path)
         {
             var dirInfo = new CarpetDirectoryInfo(path);
-            if (_dirTrigger(dirInfo).Result == false)
+
+            var dest = _dirDest(dirInfo).Result;
+
+            if (dest == null)
             {
                 return;
             }
-
-            var dest = _dirDest(dirInfo).Result;
 
             _shortcut.Create(_info.DestBaseDir + dest, path);
         }

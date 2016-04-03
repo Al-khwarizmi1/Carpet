@@ -3,10 +3,10 @@ using ICSharpCode.AvalonEdit.Editing;
 
 namespace Carpet
 {
-    public class TextSegmentReadOnlySectionProviderIgnoreStartAndEnd<T> : TextSegmentReadOnlySectionProvider<T> where T : TextSegment
+    public class TextSegmentReadOnlySectionProviderIgnoreWrapper<T> : TextSegmentReadOnlySectionProvider<T> where T : TextSegment
     {
         private TextDocument _textDocument;
-        public TextSegmentReadOnlySectionProviderIgnoreStartAndEnd(TextDocument textDocument)
+        public TextSegmentReadOnlySectionProviderIgnoreWrapper(TextDocument textDocument)
             : base(textDocument)
         {
             this._textDocument = textDocument;

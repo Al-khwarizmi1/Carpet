@@ -89,11 +89,14 @@
     <Compile Include="CarpetFileInfo.cs" />
     <Compile Include="CarpetDirectoryInfo.cs" />
     <Compile Include="CarpetManager.cs" />
+    <Compile Include="CarpetWatchInfoEditViewModel.cs" />
+    <Compile Include="ConfigManager.cs" />
     <Compile Include="CustomFunction.cs" />
     <Compile Include="Shortcut.cs" />
     <Compile Include="FileSystemWatcherWrapper.cs" />
     <Compile Include="CarpetWatchInfo.cs" />
-    <Compile Include="TextSegmentReadOnlySectionProviderIgnoreStartAndEnd.cs" />
+    <Compile Include="SystemTray.cs" />
+    <Compile Include="TextSegmentReadOnlySectionProviderWrapper.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

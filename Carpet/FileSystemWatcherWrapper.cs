@@ -1,29 +1,43 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Carpet
 {
     public class FileSystemWatcherWrapper
     {
+        private readonly IEnumerable<string> _directoriesToWatch;
+        private readonly bool _includeSubdirectories;
+        private readonly Action<string> _createFile;
+        private readonly Action<string> _createDir;
         private readonly IList<FileSystemWatcher> _watchers;
 
-        private readonly CarpetWatchInfo _info;
-        private readonly CarpetManager _manager;
-
         public FileSystemWatcherWrapper(
-            CarpetManager manager,
-            CarpetWatchInfo info)
+            IEnumerable<string> directoriesToWatch,
+            bool includeSubdirectories,
+            Action<string> createFile,
+            Action<string> createDir)
         {
-            _manager = manager;
-            _info = info;
+            _directoriesToWatch = directoriesToWatch;
+            _includeSubdirectories = includeSubdirectories;
+            _createFile = createFile;
+            _createDir = createDir;
             _watchers = new List<FileSystemWatcher>();
 
             CreateWatchers();
         }
 
+        public void Stop()
+        {
+            foreach (var watcher in _watchers)
+            {
+                watcher.Dispose();
+            }
+        }
+
         private void CreateWatchers()
         {
-            foreach (var watchDir in _info.Dirs)
+            foreach (var watchDir in _directoriesToWatch)
             {
                 var watcher = new FileSystemWatcher
                 {
@@ -36,7 +50,7 @@ namespace Carpet
 
                 watcher.Created += WatcherOnCreated;
 
-                watcher.IncludeSubdirectories = _info.IncludeSubdirectories;
+                watcher.IncludeSubdirectories = _includeSubdirectories;
                 watcher.EnableRaisingEvents = true;
 
                 _watchers.Add(watcher);
@@ -64,25 +78,22 @@ namespace Carpet
 
         private void CreateIfFile(string path)
         {
-
-            if (File.Exists(path) == false ||
-                _info.WatchFiles == false)
+            if (File.Exists(path) == false)
             {
                 return;
             }
 
-            _manager.Create(path);
+            _createFile(path);
         }
 
         private void CreateIfDirectory(string path)
         {
-            if (Directory.Exists(path) == false ||
-                _info.WatchDirs == false)
+            if (Directory.Exists(path) == false)
             {
                 return;
             }
 
-            _manager.Create(path);
+            _createDir(path);
         }
 
     }

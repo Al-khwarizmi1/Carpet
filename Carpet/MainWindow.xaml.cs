@@ -1,14 +1,14 @@
 ﻿using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Forms;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Xml;
 
@@ -16,61 +16,73 @@ namespace Carpet
 {
     public partial class MainWindow : Window
     {
-        private string ConfigFile = "config.json";
+        private readonly SystemTray _systemTray;
+        private readonly ConfigManager _configManager;
 
         private IList<CarpetManager> managers;
 
-        private static string BaseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
-        private NotifyIcon _sysTrayIcon;
-
-        private CustomFunction _filePathFunction;
-        private CustomFunction _dirPathFunction;
+        private CarpetWatchInfo _viewModel;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            this.StateChanged += MainWindow_StateChanged;
-            this.Closing += MainWindow_Closing;
+            _systemTray = new SystemTray(this);
+            _configManager = new ConfigManager();
 
             managers = new List<CarpetManager>();
 
             //LoadFromFile();
-            CreateIcon();
 
+            var list = new ObservableCollection<ComboBoxItem>();
 
-            _filePathFunction = new CustomFunction("GetFilesPath", new CustomFunctionParameter(typeof(CarpetFileInfo), "file"), "\treturn null;");
-            _dirPathFunction = new CustomFunction("GetDirPath", new CustomFunctionParameter(typeof(CarpetDirectoryInfo), "dir"), "\treturn null;");
+            var configs = _configManager.Load();
+
+            foreach (var config in configs)
+            {
+                list.Add(new ComboBoxItem { Content = config.Name, DataContext = config });
+            }
+
+            WatchInfoCombo.ItemsSource = list;
+            WatchInfoCombo.SelectionChanged += WatchInfoCombo_SelectionChanged;
+
 
             InitializeAvalon();
 
-        }
-
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            _sysTrayIcon.Dispose();
-        }
-
-        private void MainWindow_StateChanged(object sender, System.EventArgs e)
-        {
-            if (this.WindowState == WindowState.Minimized)
+            _viewModel = new CarpetWatchInfo
             {
-                this.ShowInTaskbar = false;
-            }
+                DestBaseDir = @"c:\Destination",
+                IncludeSubdirectories = true,
+                Name = "My watch",
+                Dirs = new[] { @"c:\Program files", @"c:\Windows" },
+                DirDest = "\treturn null;",
+                FileDest = "\treturn null;"
+            };
+
+            UpdateViewModel(_viewModel);
+        }
+
+        private void WatchInfoCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _viewModel = ((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo;
+            UpdateViewModel(_viewModel);
+        }
+
+        public void UpdateViewModel(CarpetWatchInfo info)
+        {
+            this.DataContext = new CarpetWatchInfoEditViewModel
+            {
+                Name = info.Name,
+                DestBaseDir = info.DestBaseDir,
+                IncludeSubdirectories = info.IncludeSubdirectories,
+            };
+
+            GenerateCode(info.Dirs, info.FileDestFunc, info.DirDestFunc);
         }
 
         private void LoadFromFile()
         {
-            if (File.Exists(ConfigFile) == false)
-            {
-                return;
-            }
-
-            var configs = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(ConfigFile), typeof(IEnumerable<CarpetWatchInfo>),
-                   new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All }) as IEnumerable<CarpetWatchInfo>;
-
-            foreach (var config in configs)
+            foreach (var config in _configManager.Load())
             {
                 var mananger = new CarpetManager(config);
                 mananger.StartWatch();
@@ -78,32 +90,26 @@ namespace Carpet
             }
         }
 
-
-        public void CreateIcon()
-        {
-            _sysTrayIcon = new NotifyIcon();
-            _sysTrayIcon.Text = @"Carpet";
-            _sysTrayIcon.Icon = new System.Drawing.Icon(Path.Combine(BaseDir, @"carpet.ico"), 40, 40);
-            _sysTrayIcon.Visible = true;
-            _sysTrayIcon.DoubleClick += _sysTrayIcon_DoubleClick;
-        }
-
-        private void _sysTrayIcon_DoubleClick(object sender, System.EventArgs e)
-        {
-            if (this.WindowState == WindowState.Minimized)
-            {
-                this.ShowInTaskbar = true;
-                this.WindowState = WindowState.Normal;
-            }
-        }
-
-
         private void InitializeAvalon()
         {
             XmlTextReader loXmlTextReader = new XmlTextReader(File.OpenRead("CSharp-Mode.xshd"));
             CodeEditor.SyntaxHighlighting = ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(loXmlTextReader, ICSharpCode.AvalonEdit.Highlighting.HighlightingManager.Instance);
             CodeEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(CodeEditor.Options);
 
+            //var segments = CodeEditor.TextArea.ReadOnlySectionProvider.GetDeletableSegments(new TextSegment
+            //{
+            //    StartOffset = 0,
+            //    Length = CodeEditor.TextArea.Document.TextLength
+            //});
+
+
+            CodeEditor.TextArea.TextEntering += CodeEditor_TextEntering;
+            CodeEditor.TextArea.TextEntered += CodeEditor_TextEntered;
+        }
+
+        private void GenerateCode(IEnumerable<string> dirs, CustomFunction<CarpetFileInfo> fileFunction, CustomFunction<CarpetDirectoryInfo> dirFunction)
+        {
+            CodeEditor.Clear();
 
             var directoriesToWatch = @"
 // Directories to watch, one per line
@@ -117,14 +123,12 @@ namespace Carpet
                 Length = CodeEditor.TextArea.Document.Text.Length
             };
 
-            CodeEditor.TextArea.Document.Text += @"
-C:\MyFolder\
-";
+            CodeEditor.TextArea.Document.Text += string.Join("\n", dirs);
 
 
-            var p = new TextSegmentReadOnlySectionProviderIgnoreStartAndEnd<TextSegment>(CodeEditor.Document);
+            var p = new TextSegmentReadOnlySectionProviderIgnoreWrapper<TextSegment>(CodeEditor.Document);
 
-            foreach (var readonlysegment in AddFunctionToEditor(_filePathFunction, CodeEditor).Union(AddFunctionToEditor(_dirPathFunction, CodeEditor)))
+            foreach (var readonlysegment in AddFunctionToEditor(fileFunction, CodeEditor).Union(AddFunctionToEditor(dirFunction, CodeEditor)))
             {
                 p.Segments.Add(readonlysegment);
             }
@@ -132,20 +136,9 @@ C:\MyFolder\
             p.Segments.Add(a3);
 
             CodeEditor.TextArea.ReadOnlySectionProvider = p;
-
-
-            var segments = CodeEditor.TextArea.ReadOnlySectionProvider.GetDeletableSegments(new TextSegment
-            {
-                StartOffset = 0,
-                Length = CodeEditor.TextArea.Document.TextLength
-            });
-
-
-            CodeEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
-            CodeEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
         }
 
-        private IList<TextSegment> AddFunctionToEditor(CustomFunction function, TextEditor editor)
+        private IList<TextSegment> AddFunctionToEditor<T>(CustomFunction<T> function, TextEditor editor)
         {
             var header = new TextSegment()
             {
@@ -178,19 +171,19 @@ C:\MyFolder\
             return trigger == variable;
         }
 
-        void textEditor_TextArea_TextEntered(object sender, TextCompositionEventArgs e)
+        void CodeEditor_TextEntered(object sender, TextCompositionEventArgs e)
         {
             if (e.Text == ".")
             {
                 IList<ICompletionData> data = new List<ICompletionData>();
 
-                if (IsAutocompleteForVariable(_filePathFunction.Parameter.Name))
+                if (IsAutocompleteForVariable(_viewModel.FileDestFunc.Parameter.Name))
                 {
-                    data = _filePathFunction.Parameter.CompletionData;
+                    data = _viewModel.FileDestFunc.Parameter.CompletionData;
                 }
-                else if (IsAutocompleteForVariable(_dirPathFunction.Parameter.Name))
+                else if (IsAutocompleteForVariable(_viewModel.DirDestFunc.Parameter.Name))
                 {
-                    data = _dirPathFunction.Parameter.CompletionData;
+                    data = _viewModel.DirDestFunc.Parameter.CompletionData;
                 }
 
                 if (data.Any())
@@ -241,19 +234,25 @@ C:\MyFolder\
             }
         }
 
-        void textEditor_TextArea_TextEntering(object sender, TextCompositionEventArgs e)
+        void CodeEditor_TextEntering(object sender, TextCompositionEventArgs e)
         {
             if (e.Text.Length > 0 && completionWindow != null)
             {
                 if (!char.IsLetterOrDigit(e.Text[0]))
                 {
-                    // Whenever a non-letter is typed while the completion window is open,
-                    // insert the currently selected element.
                     completionWindow.CompletionList.RequestInsertion(e);
                 }
             }
-            // Do not set e.Handled=true.
-            // We still want to insert the character that was typed.
+        }
+
+        private void Reset_OnClick(object sender, RoutedEventArgs e)
+        {
+            UpdateViewModel(_viewModel);
+        }
+
+        private void Save_OnClick(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

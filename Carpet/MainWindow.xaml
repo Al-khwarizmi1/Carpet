@@ -6,18 +6,71 @@
         xmlns:local="clr-namespace:Carpet"
         mc:Ignorable="d"
         xmlns:avalonEdit="clr-namespace:ICSharpCode.AvalonEdit;assembly=ICSharpCode.AvalonEdit"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid Margin="10,0,0,0">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"></ColumnDefinition>
-        </Grid.ColumnDefinitions>
+        Title="Carpet by Floatas" Height="350" Width="525">
+
+    <Grid Margin="10,5,10,5">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
-        <avalonEdit:TextEditor Grid.Row="0" Grid.Column="0"
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <ComboBox Grid.Row="0" Grid.Column="0" x:Name="WatchInfoCombo"></ComboBox>
+            <Button Content="New" Grid.Row="0" Grid.Column="1"></Button>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Name:" Grid.Column="0" Grid.Row="0"></TextBlock>
+            <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Name}"></TextBox>
+
+            <TextBlock Text="Base output directory:" Grid.Column="0" Grid.Row="1"></TextBlock>
+
+            <Grid Grid.Column="1" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" Text="{Binding DestBaseDir}"></TextBox>
+                <Button Grid.Column="1" Content="Browse"></Button>
+            </Grid>
+
+            <TextBlock Text="Include subdirectories:" Grid.Column="0" Grid.Row="2"></TextBlock>
+            <CheckBox Grid.Column="1" Grid.Row="2" IsChecked="{Binding IncludeSubdirectories}"></CheckBox>
+        </Grid>
+
+        <avalonEdit:TextEditor Grid.Row="2"
             Name="CodeEditor" FontFamily="Consolas"
             FontSize="10pt" SyntaxHighlighting="CSharp"
-            HorizontalAlignment="Center" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" Text="" Width="484">
+            HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" Text="" >
         </avalonEdit:TextEditor>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions >
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Button Content="Reset" Width="100" Grid.Column="0" Name="Reset" Click="Reset_OnClick"></Button>
+            <Button Content="Save" Width="100" Grid.Column="2" Name="Save" Click="Save_OnClick"></Button>
+        </Grid>
     </Grid>
 </Window>
