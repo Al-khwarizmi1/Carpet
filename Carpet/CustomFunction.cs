@@ -54,7 +54,7 @@ namespace Carpet
         {
             if (FunctionDelegate == null)
             {
-                FunctionDelegate = CSharpScript.Create<string>(Function, ScriptOptions.Default, typeof(T)).ContinueWith($"{FunctioName}({Parameter.Type.Name} {Parameter.Name})")
+                FunctionDelegate = CSharpScript.Create<string>(Function, ScriptOptions.Default, typeof(T)).ContinueWith($"{FunctioName}({Parameter.Name})")
                     .CreateDelegate();
             }
             return (string)FunctionDelegate.Invoke(parameter).Result;

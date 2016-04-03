@@ -25,7 +25,7 @@
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
             <ComboBox Grid.Row="0" Grid.Column="0" x:Name="WatchInfoCombo"></ComboBox>
-            <Button Content="New" Grid.Row="0" Grid.Column="1"></Button>
+            <Button Content="New" Grid.Row="0" Grid.Column="1" Name="NewWatch" Click="NewWatch_OnClick"></Button>
         </Grid>
 
         <Grid Grid.Row="1">

@@ -13,10 +13,14 @@ namespace Carpet
         private readonly SystemTray _systemTray;
         private readonly ConfigManager _configManager;
 
-        private IList<CarpetManager> managers;
+        private IList<CarpetManager> _managers;
+        private IList<CarpetWatchInfo> _watchInfos;
 
         private CarpetWatchInfo _model;
         private CarpetWatchInfoEditViewModel _viewModel;
+
+        ObservableCollection<ComboBoxItem> watchInfoList;
+
 
         public MainWindow()
         {
@@ -24,45 +28,31 @@ namespace Carpet
 
             _systemTray = new SystemTray(this);
             _configManager = new ConfigManager();
+            _managers = new List<CarpetManager>();
+            _watchInfos = _configManager.Load().ToList();
 
-            managers = new List<CarpetManager>();
+            watchInfoList = new ObservableCollection<ComboBoxItem>();
 
-            //LoadFromFile();
+            LoadFromFile();
 
-            var list = new ObservableCollection<ComboBoxItem>();
-
-            var configs = _configManager.Load();
-
-            foreach (var config in configs)
+            foreach (var config in _managers)
             {
-                list.Add(new ComboBoxItem { Content = config.Name, DataContext = config });
+                watchInfoList.Add(new ComboBoxItem { Content = config.Info.Name, DataContext = config.Info });
             }
 
-            WatchInfoCombo.ItemsSource = list;
+            WatchInfoCombo.ItemsSource = watchInfoList;
             WatchInfoCombo.SelectionChanged += WatchInfoCombo_SelectionChanged;
-
-
-            _model = new CarpetWatchInfo
-            {
-                DestBaseDir = @"c:\",
-                IncludeSubdirectories = true,
-                Name = "My watch",
-                Dirs = new[] { @"c:\Program files", @"c:\Windows" },
-                DirDest = "\treturn null;",
-                FileDest = "\treturn null;"
-            };
-
-            UpdateViewModel(_model);
         }
 
         private void WatchInfoCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             _model = ((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo;
-            UpdateViewModel(_model);
+            UpdateViewModel(_model ?? new CarpetWatchInfo() { FileDest = "\treturn null;", DirDest = "\treturn null;" });
         }
 
         public void UpdateViewModel(CarpetWatchInfo info)
         {
+            //TODO: add automapper
             _viewModel = new CarpetWatchInfoEditViewModel
             {
                 Name = info.Name,
@@ -76,11 +66,11 @@ namespace Carpet
 
         private void LoadFromFile()
         {
-            foreach (var config in _configManager.Load())
+            foreach (var config in _watchInfos)
             {
                 var mananger = new CarpetManager(config);
                 mananger.StartWatch();
-                managers.Add(mananger);
+                _managers.Add(mananger);
             }
         }
 
@@ -92,7 +82,14 @@ namespace Carpet
         private void Save_OnClick(object sender, RoutedEventArgs e)
         {
             var segments = CodeEditor.GetDeletableSegments().ToArray();
-            var watchDirs = segments[0].Split('\n').Select(_ => _.Trim());
+
+            if (segments.Length != 3)
+            {
+                MessageBox.Show("GetFilePath, GetDirPath and at least one watch directory is required.", "Error", MessageBoxButton.OK);
+                return;
+            }
+
+            var watchDirs = segments[0].Split('\n').Select(_ => _.Trim()).Where(_ => _.Length > 0);
 
             var error = AreDirectoriesValid(_viewModel.DestBaseDir, watchDirs);
             if (error != null)
@@ -128,6 +125,33 @@ namespace Carpet
                 return;
             }
 
+
+            var existing = _managers.FirstOrDefault(_ => _.Info.Name == _viewModel.Name);
+            if (existing != null)
+            {
+                Remove(_viewModel.Name);
+            }
+
+
+            //TODO: add automapper
+            _model.Name = _viewModel.Name;
+            _model.DestBaseDir = _viewModel.DestBaseDir;
+            _model.Dirs = watchDirs.ToList();
+            _model.FileDest = segments[1];
+            _model.DirDest = segments[2];
+            _model.IncludeSubdirectories = _viewModel.IncludeSubdirectories;
+
+            var mananger = new CarpetManager(_model);
+            _watchInfos.Add(_model);
+            mananger.StartWatch();
+            mananger.InitialScan();
+            _managers.Add(mananger);
+
+            var comboItem = new ComboBoxItem { Content = _model.Name, DataContext = _model };
+            watchInfoList.Add(comboItem);
+            WatchInfoCombo.SelectedItem = comboItem;
+
+            _configManager.Save(_watchInfos);
         }
 
         private string IsNameValid(string name)
@@ -137,10 +161,6 @@ namespace Carpet
                 return "Name required";
             }
 
-            if (managers.FirstOrDefault(_ => _.Info.Name == name) != null)
-            {
-                return "Name must be unique";
-            }
             return null;
         }
 
@@ -162,13 +182,64 @@ namespace Carpet
                 return "At least one watch directory required";
             }
 
-            var disks = new[] { baseDir[0] }.Concat(watchDirs.Select(_ => _[0])).GroupBy(_ => _);
+            var disks = new[] { baseDir[0] }.Concat(watchDirs.Select(_ => _.ToLower()[0])).GroupBy(_ => _);
             if (disks.Count() > 1)
             {
                 return "All directories must be on same disk";
             }
 
             return null;
+        }
+
+        private void NewWatch_OnClick(object sender, RoutedEventArgs e)
+        {
+            _model = new CarpetWatchInfo
+            {
+                DestBaseDir = @"c:\",
+                IncludeSubdirectories = true,
+                Name = "My watch",
+                Dirs = new[] { @"c:\Program files", @"c:\Windows" },
+                DirDest = "\treturn null;",
+                FileDest = "\treturn null;"
+            };
+
+            UpdateViewModel(_model);
+            WatchInfoCombo.SelectedItem = null;
+        }
+
+        private void Remove(string name)
+        {
+            var manager = _managers.FirstOrDefault(_ => _.Info.Name == name);
+            if (manager != null)
+            {
+                manager.StopWatch();
+                _managers.Remove(manager);
+            }
+
+            var config = _watchInfos.FirstOrDefault(_ => _.Name == name);
+            if (config != null)
+            {
+                _watchInfos.Remove(config);
+            }
+
+            if (WatchInfoCombo.SelectedItem != null)
+            {
+                var selected = ((CarpetWatchInfo)((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext);
+                if (selected.Name == name)
+                {
+                    watchInfoList.Remove((ComboBoxItem)WatchInfoCombo.SelectedItem);
+                    if (watchInfoList.Any())
+                    {
+                        WatchInfoCombo.SelectedItem = watchInfoList.First();
+                    }
+                    else
+                    {
+                        WatchInfoCombo.SelectedItem = null;
+                    }
+                }
+            }
+
+            _configManager.Save(_watchInfos);
         }
     }
 }

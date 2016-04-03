@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Scripting;
-using Microsoft.CodeAnalysis.Scripting.CSharp;
-using System.IO;
+﻿using System.IO;
 
 namespace Carpet
 {
@@ -9,28 +7,17 @@ namespace Carpet
         public CarpetWatchInfo Info { get; private set; }
         private FileSystemWatcherWrapper _watcher;
 
-        private readonly ScriptRunner<string> _fileDest;
-        private readonly ScriptRunner<string> _dirDest;
-
         private readonly Shortcut _shortcut;
 
         public CarpetManager(CarpetWatchInfo info)
         {
             Info = info;
 
-            _dirDest = CSharpScript.Create<string>(info.DirDest, ScriptOptions.Default, typeof(CarpetDirectoryInfo)).CreateDelegate();
-            _fileDest = CSharpScript.Create<string>(info.FileDest, ScriptOptions.Default, typeof(CarpetFileInfo)).CreateDelegate();
-
             _shortcut = new Shortcut();
         }
 
         public void InitialScan()
         {
-            if (Directory.Exists(Info.DestBaseDir))
-            {
-                Directory.Delete(Info.DestBaseDir, true);
-            }
-
             foreach (var dirToWatch in Info.Dirs)
             {
                 var directories = Directory.GetDirectories(dirToWatch);
@@ -63,7 +50,7 @@ namespace Carpet
         {
             var fileInfo = new CarpetFileInfo(path);
 
-            var dest = _fileDest(fileInfo).Result;
+            var dest = Info.FileDestFunc.Invoke(fileInfo);
             if (dest == null)
             {
                 return;
@@ -76,7 +63,7 @@ namespace Carpet
         {
             var dirInfo = new CarpetDirectoryInfo(path);
 
-            var dest = _dirDest(dirInfo).Result;
+            var dest = Info.DirDestFunc.Invoke(dirInfo);
 
             if (dest == null)
             {
