@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 
 namespace Carpet
 {
@@ -56,7 +57,7 @@ namespace Carpet
                 return;
             }
 
-            _shortcut.Create(Info.DestBaseDir + dest, path);
+            _shortcut.Create(CombinePaths(Info.DestBaseDir, dest), path);
         }
 
         public void CreateDir(string path)
@@ -70,7 +71,17 @@ namespace Carpet
                 return;
             }
 
-            _shortcut.Create(Info.DestBaseDir + dest, path);
+            _shortcut.Create(CombinePaths(Info.DestBaseDir, dest), path);
+        }
+
+        private string CombinePaths(string a, string b)
+        {
+            if (a.ToCharArray().Last() != '\\')
+            {
+                a += @"\";
+            }
+
+            return a + b;
         }
 
     }

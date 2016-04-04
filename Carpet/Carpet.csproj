@@ -95,6 +95,7 @@
     </Compile>
     <Compile Include="ConfigManager.cs" />
     <Compile Include="CustomFunction.cs" />
+    <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Shortcut.cs" />
     <Compile Include="FileSystemWatcherWrapper.cs" />
     <Compile Include="CarpetWatchInfo.cs" />
@@ -171,6 +172,10 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

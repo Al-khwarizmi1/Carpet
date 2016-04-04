@@ -37,6 +37,11 @@ namespace Carpet
         public static CustomFunctionParameter Dir = new CustomFunctionParameter(typeof(CarpetDirectoryInfo), "dir");
     }
 
+    public class GlobalParam<T>
+    {
+        public T g;
+    }
+
     public class CustomFunction<T>
     {
         public CustomFunctionParameter Parameter { get; }
@@ -54,10 +59,10 @@ namespace Carpet
         {
             if (FunctionDelegate == null)
             {
-                FunctionDelegate = CSharpScript.Create<string>(Function, ScriptOptions.Default, typeof(T)).ContinueWith($"{FunctioName}({Parameter.Name})")
+                FunctionDelegate = CSharpScript.Create<string>(Function, ScriptOptions.Default, typeof(GlobalParam<T>)).ContinueWith($"{FunctioName}(g)")
                     .CreateDelegate();
             }
-            return (string)FunctionDelegate.Invoke(parameter).Result;
+            return (string)FunctionDelegate.Invoke(new GlobalParam<T> { g = parameter }).Result;
         }
 
         public bool Test()

@@ -16,7 +16,7 @@ namespace Carpet
             {
                 var parts = placedIn.Split('/');
                 var dir = String.Join("/", parts.Take(parts.Length - 1));
-                if (System.IO.Directory.Exists(dir) == false)
+                if (string.IsNullOrEmpty(dir) == false && System.IO.Directory.Exists(dir) == false)
                 {
                     System.IO.Directory.CreateDirectory(dir);
                 }

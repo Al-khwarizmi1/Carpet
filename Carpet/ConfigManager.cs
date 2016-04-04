@@ -21,7 +21,7 @@ namespace Carpet
 
         public void Save(IEnumerable<CarpetWatchInfo> infos)
         {
-            var serialized = JsonConvert.SerializeObject(ConfigFile, Formatting.Indented, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
+            var serialized = JsonConvert.SerializeObject(infos, Formatting.Indented, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
 
             File.WriteAllText(ConfigFile, serialized);
         }

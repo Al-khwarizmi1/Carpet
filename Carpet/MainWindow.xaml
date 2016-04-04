@@ -75,6 +75,7 @@
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Button Content="Reset" Width="100" Grid.Column="0" Name="Reset" Click="Reset_OnClick"></Button>
+            <Button Content="Delete" Width="100" Grid.Column="1" Name="Delete" Visibility="Collapsed" Click="Delete_OnClick"></Button>
             <Button Content="Save" Width="100" Grid.Column="2" Name="Save" Click="Save_OnClick"></Button>
         </Grid>
     </Grid>

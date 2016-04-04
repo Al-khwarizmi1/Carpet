@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -47,7 +48,29 @@ namespace Carpet
 
 
             var first = watchInfoList.FirstOrDefault();
-            if (first == null)
+            InitViewModel(first);
+        }
+
+
+        public void EnsureAppIsInStartup()
+        {
+            var registryName = "Carpet by Floatas";
+
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            {
+                object existingKey = key.GetValue(registryName, null);
+
+                if (existingKey == null)
+                {
+                    key.SetValue(registryName, "\"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\" -silent");
+                }
+            }
+        }
+
+
+        private void InitViewModel(ComboBoxItem item)
+        {
+            if (item == null)
             {
                 _model = CreateWatchInfoNew();
                 UpdateViewModel(_model);
@@ -55,14 +78,24 @@ namespace Carpet
             }
             else
             {
-                _model = first.DataContext as CarpetWatchInfo;
+                _model = item.DataContext as CarpetWatchInfo;
                 UpdateViewModel(_model);
-                WatchInfoCombo.SelectedItem = _model;
+                WatchInfoCombo.SelectedItem = item;
             }
         }
 
         private void WatchInfoCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+
+            if (WatchInfoCombo.SelectedItem == null)
+            {
+                Delete.Visibility = Visibility.Collapsed;
+                return;
+            }
+            else
+            {
+                Delete.Visibility = Visibility.Visible;
+            }
             _model = (((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo) ?? CreateWatchInfoNew();
             UpdateViewModel(_model);
         }
@@ -199,7 +232,7 @@ namespace Carpet
                 return "At least one watch directory required";
             }
 
-            var disks = new[] { baseDir[0] }.Concat(watchDirs.Select(_ => _.ToLower()[0])).GroupBy(_ => _);
+            var disks = new[] { baseDir.ToLower()[0] }.Concat(watchDirs.Select(_ => _.ToLower()[0])).GroupBy(_ => _);
             if (disks.Count() > 1)
             {
                 return "All directories must be on same disk";
@@ -270,7 +303,17 @@ namespace Carpet
             var dialog = new FolderBrowserDialog();
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                DestBaseDirTextBox.Text = dialog.SelectedPath;
+                _viewModel.DestBaseDir = dialog.SelectedPath;
+            }
+        }
+
+        private void Delete_OnClick(object sender, RoutedEventArgs e)
+        {
+            var confirmResult = MessageBox.Show("Are you sure to delete this item ?", "Confirm delete", MessageBoxButton.YesNo);
+            if (confirmResult == MessageBoxResult.Yes)
+            {
+                Remove((string)((ComboBoxItem)WatchInfoCombo.SelectedItem).Content);
+                InitViewModel(null);
             }
         }
     }
