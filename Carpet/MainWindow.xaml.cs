@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Carpet
 {
@@ -42,12 +44,27 @@ namespace Carpet
 
             WatchInfoCombo.ItemsSource = watchInfoList;
             WatchInfoCombo.SelectionChanged += WatchInfoCombo_SelectionChanged;
+
+
+            var first = watchInfoList.FirstOrDefault();
+            if (first == null)
+            {
+                _model = CreateWatchInfoNew();
+                UpdateViewModel(_model);
+                WatchInfoCombo.SelectedItem = null;
+            }
+            else
+            {
+                _model = first.DataContext as CarpetWatchInfo;
+                UpdateViewModel(_model);
+                WatchInfoCombo.SelectedItem = _model;
+            }
         }
 
         private void WatchInfoCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            _model = ((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo;
-            UpdateViewModel(_model ?? new CarpetWatchInfo() { FileDest = "\treturn null;", DirDest = "\treturn null;" });
+            _model = (((ComboBoxItem)WatchInfoCombo.SelectedItem).DataContext as CarpetWatchInfo) ?? CreateWatchInfoNew();
+            UpdateViewModel(_model);
         }
 
         public void UpdateViewModel(CarpetWatchInfo info)
@@ -193,18 +210,24 @@ namespace Carpet
 
         private void NewWatch_OnClick(object sender, RoutedEventArgs e)
         {
-            _model = new CarpetWatchInfo
-            {
-                DestBaseDir = @"c:\",
-                IncludeSubdirectories = true,
-                Name = "My watch",
-                Dirs = new[] { @"c:\Program files", @"c:\Windows" },
-                DirDest = "\treturn null;",
-                FileDest = "\treturn null;"
-            };
+            _model = CreateWatchInfoNew();
 
             UpdateViewModel(_model);
             WatchInfoCombo.SelectedItem = null;
+        }
+
+
+        private CarpetWatchInfo CreateWatchInfoNew()
+        {
+            return new CarpetWatchInfo
+            {
+                DestBaseDir = string.Empty,
+                IncludeSubdirectories = false,
+                Name = string.Empty,
+                Dirs = new[] { string.Empty, },
+                DirDest = "\treturn null;",
+                FileDest = "\treturn null;"
+            };
         }
 
         private void Remove(string name)
@@ -240,6 +263,15 @@ namespace Carpet
             }
 
             _configManager.Save(_watchInfos);
+        }
+
+        private void DirPicker_OnClick(object sender, RoutedEventArgs e)
+        {
+            var dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                DestBaseDirTextBox.Text = dialog.SelectedPath;
+            }
         }
     }
 }

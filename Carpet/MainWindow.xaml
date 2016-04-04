@@ -24,7 +24,16 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
-            <ComboBox Grid.Row="0" Grid.Column="0" x:Name="WatchInfoCombo"></ComboBox>
+            <ComboBox Grid.Row="0" Grid.Column="0" x:Name="WatchInfoCombo" RenderTransformOrigin="0.5,0.5">
+                <ComboBox.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="0.008"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </ComboBox.RenderTransform>
+            </ComboBox>
             <Button Content="New" Grid.Row="0" Grid.Column="1" Name="NewWatch" Click="NewWatch_OnClick"></Button>
         </Grid>
 
@@ -49,8 +58,8 @@
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" Text="{Binding DestBaseDir}"></TextBox>
-                <Button Grid.Column="1" Content="Browse"></Button>
+                <TextBox Grid.Column="0" Text="{Binding DestBaseDir}" Name="DestBaseDirTextBox"></TextBox>
+                <Button Grid.Column="1" Content="Browse" Name="DirPicker" Click="DirPicker_OnClick"></Button>
             </Grid>
 
             <TextBlock Text="Include subdirectories:" Grid.Column="0" Grid.Row="2"></TextBlock>
