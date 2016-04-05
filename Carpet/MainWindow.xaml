@@ -85,5 +85,7 @@
             <Hyperlink NavigateUri="https://github.com/floatas/Carpet" RequestNavigate="Hyperlink_OnRequestNavigate">https://github.com/floatas/Carpet</Hyperlink>
         </TextBlock>
 
+        <TextBlock Grid.Row="4" HorizontalAlignment="Right" x:Name="VersionBlock"/>
+
     </Grid>
 </Window>

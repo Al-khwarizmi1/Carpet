@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -51,6 +52,9 @@ namespace Carpet
 
             var first = watchInfoList.FirstOrDefault();
             InitViewModel(first);
+
+            var version = Assembly.GetEntryAssembly().GetName().Version;
+            VersionBlock.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
         }
 
 
