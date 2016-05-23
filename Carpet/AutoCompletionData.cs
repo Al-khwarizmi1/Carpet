@@ -9,33 +9,24 @@ namespace Carpet
     {
         public AutoCompletionData(string text)
         {
-            this.Text = text;
+            Text = text;
         }
 
-        public System.Windows.Media.ImageSource Image
-        {
-            get { return null; }
-        }
+        public System.Windows.Media.ImageSource Image => null;
 
-        public string Text { get; private set; }
+        public string Text { get; }
 
         // Use this property if you want to show a fancy UIElement in the list.
-        public object Content
-        {
-            get { return this.Text; }
-        }
+        public object Content => Text;
 
-        public object Description
-        {
-            get { return "Description for " + this.Text; }
-        }
+        public object Description => Text;
 
-        public double Priority { get; }
+        public double Priority => 0;
 
         public void Complete(TextArea textArea, ISegment completionSegment,
             EventArgs insertionRequestEventArgs)
         {
-            textArea.Document.Replace(completionSegment, this.Text);
+            textArea.Document.Replace(completionSegment, Text);
         }
     }
 
